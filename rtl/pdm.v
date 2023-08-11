@@ -18,15 +18,15 @@ always @(negedge rstn or posedge clk) begin
 end
 wire ock_01 = ~ock_dd & ock_d;
 
-reg [31:0] inte;
-wire [31:0] delt = sdo ? 
-	((inte == 32'hffffffff) ? 32'h00000000 : 32'h00000001) : 
-	((inte == 32'h00000000) ? 32'h00000000 : 32'hffffffff);
+reg [31:0] sigma;
+wire [31:0] delta = sdo ? 
+	((sigma == 32'hffffffff) ? 32'h00000000 : 32'h00000001) : 
+	((sigma == 32'h00000000) ? 32'h00000000 : 32'hffffffff);
 always @(negedge rstn or posedge clk) begin
-	if(!rstn) inte <= 32'h80000000;
-	else if(ock_01) inte <= inte + (~din + 32'h00000001) + delt;
+	if(!rstn) sigma <= 32'h80000000;
+	else if(ock_01) sigma <= sigma + (~din + 32'h00000001) + delta;
 end
-assign sdo = din > inte;
+assign sdo = din > sigma;
 
 endmodule
 
@@ -83,19 +83,19 @@ end
 wire ock_01 = ~ock_dd & ock_d;
 wire ock_10 = ock_dd & ~ock_d;
 
-reg [31:0] inte_l, inte_r;
-wire [31:0] delt = sdo ? 
-	(((ock_dd ? inte_r : inte_l) == 32'hffffffff) ? 32'h00000000 : 32'h00000001) : 
-	(((ock_dd ? inte_r : inte_l) == 32'h00000000) ? 32'h00000000 : 32'hffffffff);
+reg [31:0] sigma_l, sigma_r;
+wire [31:0] delta = sdo ? 
+	(((ock_dd ? sigma_r : sigma_l) == 32'hffffffff) ? 32'h00000000 : 32'h00000001) : 
+	(((ock_dd ? sigma_r : sigma_l) == 32'h00000000) ? 32'h00000000 : 32'hffffffff);
 always @(negedge rstn or posedge clk) begin
 	if(!rstn) begin
-		inte_l <= 32'h80000000;
-		inte_r <= 32'h80000000;
+		sigma_l <= 32'h80000000;
+		sigma_r <= 32'h80000000;
 	end
-	else if(ock_01) inte_l <= inte_l + (~din_l + 32'h00000001) + delt;
-	else if(ock_10) inte_r <= inte_r + (~din_r + 32'h00000001) + delt;
+	else if(ock_01) sigma_l <= sigma_l + (~din_l + 32'h00000001) + delta;
+	else if(ock_10) sigma_r <= sigma_r + (~din_r + 32'h00000001) + delta;
 end
-assign sdo = (ock_dd ? din_r : din_l) > (ock_dd ? inte_r : inte_l);
+assign sdo = (ock_dd ? din_r : din_l) > (ock_dd ? sigma_r : sigma_l);
 
 endmodule
 
