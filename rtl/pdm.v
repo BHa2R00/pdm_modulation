@@ -19,7 +19,9 @@ end
 wire ock_01 = ~ock_dd & ock_d;
 
 reg [31:0] inte;
-wire [31:0] delt = sdo ? 32'h00000001 : 32'hffffffff;
+wire [31:0] delt = sdo ? 
+	((inte == 32'hffffffff) ? 32'h00000000 : 32'h00000001) : 
+	((inte == 32'h00000000) ? 32'h00000000 : 32'hffffffff);
 always @(negedge rstn or posedge clk) begin
 	if(!rstn) inte <= 32'h80000000;
 	else if(ock_01) inte <= inte + (~din + 32'h00000001) + delt;
@@ -51,7 +53,10 @@ wire ock_01 = ~ock_dd & ock_d;
 
 always @(negedge rstn or posedge clk) begin
 	if(!rstn) dout <= 32'h80000000;
-	else if(ock_01) dout <= dout + (sdi ? 32'h00000001 : 32'hffffffff);
+	else if(ock_01) 
+		dout <= dout + (sdi ? 
+			((dout == 32'hffffffff) ? 32'h00000000 : 32'h00000001) : 
+			((dout == 32'h00000000) ? 32'h00000000 : 32'hffffffff));
 end
 
 endmodule
@@ -79,7 +84,9 @@ wire ock_01 = ~ock_dd & ock_d;
 wire ock_10 = ock_dd & ~ock_d;
 
 reg [31:0] inte_l, inte_r;
-wire [31:0] delt = sdo ? 32'h00000001 : 32'hffffffff;
+wire [31:0] delt = sdo ? 
+	(((ock_dd ? inte_r : inte_l) == 32'hffffffff) ? 32'h00000000 : 32'h00000001) : 
+	(((ock_dd ? inte_r : inte_l) == 32'h00000000) ? 32'h00000000 : 32'hffffffff);
 always @(negedge rstn or posedge clk) begin
 	if(!rstn) begin
 		inte_l <= 32'h80000000;
@@ -119,8 +126,14 @@ always @(negedge rstn or posedge clk) begin
 		dout_l <= 32'h80000000;
 		dout_r <= 32'h80000000;
 	end
-	else if(ock_01) dout_l <= dout_l + (sdi ? 32'h00000001 : 32'hffffffff);
-	else if(ock_10) dout_r <= dout_r + (sdi ? 32'h00000001 : 32'hffffffff);
+	else if(ock_01) 
+		dout_l <= dout_l + (sdi ? 
+			((dout_l == 32'hffffffff) ? 32'h00000000 : 32'h00000001) : 
+			((dout_l == 32'h00000000) ? 32'h00000000 : 32'hffffffff));
+	else if(ock_10) 
+		dout_r <= dout_r + (sdi ? 
+			((dout_r == 32'hffffffff) ? 32'h00000000 : 32'h00000001) : 
+			((dout_r == 32'h00000000) ? 32'h00000000 : 32'hffffffff));
 end
 
 endmodule
