@@ -1,5 +1,6 @@
 `timescale 1ns / 100ps
 
+
 module pdm_tb;
 
 reg rstn, clk;
@@ -25,6 +26,20 @@ audio_pdm_modulator u_audio_pdm_modulator(
 	.rstn(rstn), .clk(clk)
 );
 
+wire u_ir_pdm_modulator_sdo;
+reg [7:0] u_ir_pdm_modulator_din;
+reg u_ir_pdm_modulator_ock, u_ir_pdm_modulator_bck;
+reg u_ir_pdm_modulator_load;
+wire u_ir_pdm_modulator_done;
+ir_pdm_modulator u_ir_pdm_modulator(
+	.sdo(u_ir_pdm_modulator_sdo), 
+	.din(u_ir_pdm_modulator_din), 
+	.ock(u_ir_pdm_modulator_ock), .bck(u_ir_pdm_modulator_bck), 
+	.load(u_ir_pdm_modulator_load), 
+	.done(u_ir_pdm_modulator_done), 
+	.rstn(rstn), .clk(clk)
+);
+
 reg u_pdm_demodulator_sdi;
 wire [31:0] u_pdm_demodulator_dout;
 reg u_pdm_demodulator_ock;
@@ -46,17 +61,55 @@ audio_pdm_demodulator u_audio_pdm_demodulator(
 	.rstn(rstn), .clk(clk)
 );
 
-always@(*) u_pdm_demodulator_ock = u_pdm_modulator_ock;
-always@(*) u_pdm_demodulator_sdi = u_pdm_modulator_sdo;
+reg u_ir_pdm_demodulator_sdi;
+wire [7:0] u_ir_pdm_demodulator_dout;
+reg u_ir_pdm_demodulator_ock, u_ir_pdm_demodulator_bck;
+reg u_ir_pdm_demodulator_load;
+wire u_ir_pdm_demodulator_done;
+ir_pdm_demodulator u_ir_pdm_demodulator(
+	.sdi(u_ir_pdm_demodulator_sdi), 
+	.dout(u_ir_pdm_demodulator_dout), 
+	.ock(u_ir_pdm_demodulator_ock), .bck(u_ir_pdm_demodulator_bck), 
+	.load(u_ir_pdm_demodulator_load), 
+	.done(u_ir_pdm_demodulator_done), 
+	.rstn(rstn), .clk(clk)
+);
 
 always #33.3 clk = ~clk;
 always #133.3 u_pdm_modulator_ock = ~u_pdm_modulator_ock;
+always #138.8 u_ir_pdm_modulator_ock = ~u_ir_pdm_modulator_ock;
+always #2800 u_ir_pdm_modulator_bck = ~u_ir_pdm_modulator_bck;
+always@(*) u_pdm_demodulator_ock = u_pdm_modulator_ock;
+always@(*) u_pdm_demodulator_sdi = u_pdm_modulator_sdo;
 always@(negedge u_pdm_modulator_ock) u_pdm_modulator_din = 2147483647*$sin(1e02*$time*2*3.1415926) + 2147483647;
 always@(*) u_audio_pdm_modulator_ock = u_pdm_modulator_ock;
-always@(negedge u_audio_pdm_modulator_ock) u_audio_pdm_modulator_din_l = 2147483647*$sin(1e02*$time*2*3.1415926) + 2147483647;
-always@(negedge u_audio_pdm_modulator_ock) u_audio_pdm_modulator_din_r = 2147483647*$cos(1e02*$time*2*3.1415926) + 2147483647;
+always@(negedge u_audio_pdm_modulator_ock) u_audio_pdm_modulator_din_l = 2147483647*$sin(5e02*$time*2*3.1415926) + 2147483647;
+always@(negedge u_audio_pdm_modulator_ock) u_audio_pdm_modulator_din_r = 2147483647*$cos(5e02*$time*2*3.1415926) + 2147483647;
 always@(*) u_audio_pdm_demodulator_ock = u_audio_pdm_modulator_ock;
 always@(*) u_audio_pdm_demodulator_sdi = u_audio_pdm_modulator_sdo;
+always@(negedge rstn or posedge clk) begin
+	if(!rstn) begin
+		u_ir_pdm_modulator_din = 0;
+		u_ir_pdm_modulator_load = 0;
+	end
+	else begin
+		if(u_ir_pdm_modulator_done) begin
+			u_ir_pdm_modulator_din = u_pdm_modulator_din[7:0];
+			u_ir_pdm_modulator_load = 1;
+		end
+		else u_ir_pdm_modulator_load = 0;
+	end
+end
+always@(*) u_ir_pdm_demodulator_sdi = u_ir_pdm_modulator_sdo;
+always@(*) u_ir_pdm_demodulator_ock = u_ir_pdm_modulator_ock;
+always@(*) u_ir_pdm_demodulator_bck = u_ir_pdm_modulator_bck;
+always@(negedge rstn or posedge clk) begin
+	if(!rstn) u_ir_pdm_demodulator_load = 0;
+	else begin
+		if(u_ir_pdm_demodulator_done) u_ir_pdm_demodulator_load = 1;
+		else u_ir_pdm_demodulator_load = 0;
+	end
+end
 
 initial begin
 	rstn = 0;
@@ -64,9 +117,13 @@ initial begin
 	//u_pdm_modulator_sdo init
 	u_pdm_modulator_ock = 0;
 	//u_pdm_modulator_sdo init end
+	//u_ir_pdm_modulator_sdo init
+	u_ir_pdm_modulator_ock = 0;
+	u_ir_pdm_modulator_bck = 0;
+	//u_ir_pdm_modulator_sdo init end
 	#3000
 	rstn = 1;
-	#3000000
+	#30000000
 	rstn = 0;
 	#3000
 	$finish(2);
