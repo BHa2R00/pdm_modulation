@@ -251,7 +251,7 @@ always@(negedge rstn or posedge clk) begin
 	else if(bck_01) begin
 		if(delta_sign_xor) begin
 			done <= 1'b1;
-			dout <= ir_sigma + 8'h01;
+			dout <= ir_sigma;
 		end
 		else ir_sigma <= ir_sigma + delta;
 	end
