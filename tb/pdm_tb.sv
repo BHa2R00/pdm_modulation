@@ -27,7 +27,7 @@ audio_pdm_modulator u_audio_pdm_modulator(
 );
 
 wire u_ir_pdm_modulator_sdo;
-reg [7:0] u_ir_pdm_modulator_din;
+reg [4:0] u_ir_pdm_modulator_din;
 reg u_ir_pdm_modulator_ock, u_ir_pdm_modulator_bck;
 reg u_ir_pdm_modulator_load;
 wire u_ir_pdm_modulator_done;
@@ -62,7 +62,7 @@ audio_pdm_demodulator u_audio_pdm_demodulator(
 );
 
 reg u_ir_pdm_demodulator_sdi;
-wire [7:0] u_ir_pdm_demodulator_dout;
+wire [4:0] u_ir_pdm_demodulator_dout;
 reg u_ir_pdm_demodulator_ock, u_ir_pdm_demodulator_bck;
 reg u_ir_pdm_demodulator_load;
 wire u_ir_pdm_demodulator_done;
@@ -94,7 +94,7 @@ always@(negedge rstn or posedge clk) begin
 	end
 	else begin
 		if(u_ir_pdm_modulator_done) begin
-			u_ir_pdm_modulator_din = u_pdm_modulator_din[7:0];
+			u_ir_pdm_modulator_din = u_pdm_modulator_din[4:0];
 			u_ir_pdm_modulator_load = 1;
 		end
 		else u_ir_pdm_modulator_load = 0;
