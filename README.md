@@ -2,7 +2,7 @@
 
 verilog implement of pdm modulator and demodulator for audio and infrared remote
 
-![format](https://github.com/BHa2R00/pdm_modulation/blob/main/20230812180005_1547x632_scrot.png)
+![format](https://github.com/BHa2R00/pdm_modulation/blob/main/20230813172854_1541x636_scrot.png)
 
 
 sample clock of audio pdm modulation:
