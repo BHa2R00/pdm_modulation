@@ -12,4 +12,4 @@ sample clock of audio pdm modulation:
 
 infrared remote pdm modulation: block counter: 
 
-![format](https://github.com/BHa2R00/pdm_modulation/blob/main/20230812180614_478x195_scrot.png)
+![format](https://github.com/BHa2R00/pdm_modulation/blob/main/20230813171546_384x165_scrot.png)
