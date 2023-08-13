@@ -141,7 +141,7 @@ endmodule
 
 module ir_pdm_modulator(
 	output sdo, 
-	input [7:0] din, 
+	input [4:0] din, 
 	input ock, bck, 
 	input load, 
 	output done, 
@@ -161,20 +161,20 @@ always @(negedge rstn or posedge clk) begin
 end
 wire bck_01 = ~bck_dd & bck_d;
 
-reg [7:0] sigma;
-assign done = sigma == 8'h80;
-wire [7:0] delta = 
-	(sigma < 8'h80) ? 8'h01 : 
-	(sigma > 8'h80) ? 8'hff : 
-	8'h00;
+reg [4:0] sigma;
+assign done = sigma == 5'h10;
+wire [4:0] delta = 
+	(sigma < 5'h10) ? 5'h01 : 
+	(sigma > 5'h10) ? 5'h1f : 
+	5'h00;
 always@(negedge rstn or posedge clk) begin
-	if(!rstn) sigma <= 8'h80;
+	if(!rstn) sigma <= 5'h10;
 	else begin
 		if(load) sigma <= din;
 		else if(bck_01) sigma <= sigma + delta;
 	end
 end
-wire [31:0] sigma_bin = (delta == 8'hff) ? 32'h80000000 : 32'h00000000;
+wire [31:0] sigma_bin = (delta == 5'h1f) ? 32'h80000000 : 32'h00000000;
 pdm_modulator u_pdm_modulator(
 	.sdo(sdo), 
 	.din(sigma_bin), 
@@ -187,7 +187,7 @@ endmodule
 
 module ir_pdm_demodulator(
 	input sdi, 
-	output reg [7:0] dout, 
+	output reg [4:0] dout, 
 	input ock, bck, 
 	input load, 
 	output reg done, 
@@ -227,11 +227,11 @@ always@(negedge rstn or posedge clk) begin
 end
 wire sigma_sign = ((sigma_10 < 32'h80000000) & (sigma_10 > 32'h00000003)) ? 1'b1 : 1'b0;
 
-reg [7:0] ir_sigma;
-wire [7:0] delta = sigma_sign ? 
-	(((ir_sigma == 8'h00) | done) ? 8'h00 : 8'hff) :
-	(((ir_sigma == 8'hff) | done) ? 8'h00 : 8'h01); 
-wire delta_sign = delta[7];
+reg [4:0] ir_sigma;
+wire [4:0] delta = sigma_sign ? 
+	(((ir_sigma == 5'h00) | done) ? 5'h00 : 5'h1f) :
+	(((ir_sigma == 5'h1f) | done) ? 5'h00 : 5'h01); 
+wire delta_sign = delta[4];
 reg delta_sign_d;
 always @(negedge rstn or posedge clk) begin
 	if(!rstn) delta_sign_d <= 1'b0;
@@ -241,12 +241,12 @@ wire delta_sign_xor = delta_sign ^ delta_sign_d;
 always@(negedge rstn or posedge clk) begin
 	if(!rstn) begin
 		done <= 1'b1;
-		ir_sigma <= 8'h80;
-		dout <= 8'h80;
+		ir_sigma <= 5'h10;
+		dout <= 5'h10;
 	end
 	else if(load) begin
 		done <= 1'b0;
-		ir_sigma <= 8'h80;
+		ir_sigma <= 5'h10;
 	end
 	else if(bck_01) begin
 		if(delta_sign_xor) begin
