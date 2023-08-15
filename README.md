@@ -1,8 +1,8 @@
 # pdm_modulation
 
-verilog implement of pdm modulator and demodulator for audio and infrared remote
+verilog implement of pdm modulator and demodulator for pwm, audio and infrared remote
 
-![format](https://github.com/BHa2R00/pdm_modulation/blob/main/20230813172854_1541x636_scrot.png)
+![format](https://github.com/BHa2R00/pdm_modulation/blob/main/20230815173218_1545x661_scrot.png)
 
 
 sample clock of audio pdm modulation:
