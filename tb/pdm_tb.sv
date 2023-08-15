@@ -81,7 +81,25 @@ always #138.8 u_ir_pdm_modulator_ock = ~u_ir_pdm_modulator_ock;
 always #2800 u_ir_pdm_modulator_bck = ~u_ir_pdm_modulator_bck;
 always@(*) u_pdm_demodulator_ock = u_pdm_modulator_ock;
 always@(*) u_pdm_demodulator_sdi = u_pdm_modulator_sdo;
-always@(negedge u_pdm_modulator_ock) u_pdm_modulator_din = 2147483647*$sin(1e02*$time*2*3.1415926) + 2147483647;
+reg [7:0] u_pdm_modulator_din_cnt;
+always@(negedge rstn or negedge u_pdm_modulator_ock) begin
+	if(!rstn) begin
+		u_pdm_modulator_din = 0;
+		u_pdm_modulator_din_cnt = 0;
+	end
+	else if(u_pdm_modulator_din_cnt == 0) begin
+		if(u_pdm_modulator_din == 0) u_pdm_modulator_din = 1073741824;
+		else if(u_pdm_modulator_din == 1073741824) u_pdm_modulator_din = 1430224128;
+		else if(u_pdm_modulator_din == 1430224128) u_pdm_modulator_din = 2147483648;
+		else if(u_pdm_modulator_din == 2147483648) u_pdm_modulator_din = 2860448256;
+		else if(u_pdm_modulator_din == 2860448256) u_pdm_modulator_din = 3221225472;
+		else if(u_pdm_modulator_din == 3221225472) u_pdm_modulator_din = 4294967295;
+		else if(u_pdm_modulator_din == 4294967295) u_pdm_modulator_din = 0;
+		else u_pdm_modulator_din = 0;
+		u_pdm_modulator_din_cnt = u_pdm_modulator_din_cnt - 1;
+	end
+	else u_pdm_modulator_din_cnt = u_pdm_modulator_din_cnt - 1;
+end
 always@(*) u_audio_pdm_modulator_ock = u_pdm_modulator_ock;
 always@(negedge u_audio_pdm_modulator_ock) u_audio_pdm_modulator_din_l = 2147483647*$sin(5e02*$time*2*3.1415926) + 2147483647;
 always@(negedge u_audio_pdm_modulator_ock) u_audio_pdm_modulator_din_r = 2147483647*$cos(5e02*$time*2*3.1415926) + 2147483647;
@@ -94,7 +112,7 @@ always@(negedge rstn or posedge clk) begin
 	end
 	else begin
 		if(u_ir_pdm_modulator_done) begin
-			u_ir_pdm_modulator_din = u_pdm_modulator_din[4:0];
+			u_ir_pdm_modulator_din = u_audio_pdm_modulator_din_l[4:0];
 			u_ir_pdm_modulator_load = 1;
 		end
 		else u_ir_pdm_modulator_load = 0;
