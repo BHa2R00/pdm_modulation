@@ -63,6 +63,8 @@ endmodule
 
 
 module audio_pdm_modulator (
+	input [5:0] scale, 
+	input [31:0] align, 
 	output sdo, 
 	input [31:0] din_l, din_r, 
 	input ock, 
@@ -83,6 +85,11 @@ end
 wire ock_01 = ~ock_dd & ock_d;
 wire ock_10 = ock_dd & ~ock_d;
 
+wire [31:0] din_l_1 = din_l + align;
+wire [31:0] din_l_2 = {din_l_1[31],(scale[5] ? din_l_1[30:0]>>scale[4:0] : din_l_1[30:0]<<scale[4:0])};
+wire [31:0] din_r_1 = din_r + align;
+wire [31:0] din_r_2 = {din_r_1[31],(scale[5] ? din_r_1[30:0]>>scale[4:0] : din_r_1[30:0]<<scale[4:0])};
+
 reg [31:0] sigma_l, sigma_r;
 wire [31:0] delta = sdo ? 
 	(((ock_dd ? sigma_r : sigma_l) == 32'hffffffff) ? 32'h80000000 : 32'h00000001) : 
@@ -92,8 +99,8 @@ always @(negedge rstn or posedge clk) begin
 		sigma_l <= 32'h80000000;
 		sigma_r <= 32'h80000000;
 	end
-	else if(ock_01) sigma_l <= sigma_l + (~din_l + 32'h00000001) + delta;
-	else if(ock_10) sigma_r <= sigma_r + (~din_r + 32'h00000001) + delta;
+	else if(ock_01) sigma_l <= sigma_l + (~din_l_2 + 32'h00000001) + delta;
+	else if(ock_10) sigma_r <= sigma_r + (~din_r_2 + 32'h00000001) + delta;
 end
 assign sdo = (ock_dd ? din_r : din_l) > (ock_dd ? sigma_r : sigma_l);
 
@@ -101,8 +108,10 @@ endmodule
 
 
 module audio_pdm_demodulator (
+	input [5:0] scale, 
+	input [31:0] align, 
 	input sdi, 
-	output reg [31:0] dout_l, dout_r, 
+	output [31:0] dout_l, dout_r, 
 	input ock, 
 	input rstn, clk
 );
@@ -121,22 +130,30 @@ end
 wire ock_01 = ~ock_dd & ock_d;
 wire ock_10 = ock_dd & ~ock_d;
 
+reg [31:0] dout_l_1, dout_r_1;
 always @(negedge rstn or posedge clk) begin
 	if(!rstn) begin
-		dout_l <= 32'h80000000;
-		dout_r <= 32'h80000000;
+		dout_l_1 <= 32'h80000000;
+		dout_r_1 <= 32'h80000000;
 	end
 	else if(ock_01) 
-		dout_l <= dout_l + (sdi ? 
-			((dout_l == 32'hffffffff) ? 32'h80000000 : 32'h00000001) : 
-			((dout_l == 32'h00000000) ? 32'h80000000 : 32'hffffffff));
+		dout_l_1 <= dout_l_1 + (sdi ? 
+			((dout_l_1 == 32'hffffffff) ? 32'h80000000 : 32'h00000001) : 
+			((dout_l_1 == 32'h00000000) ? 32'h80000000 : 32'hffffffff));
 	else if(ock_10) 
-		dout_r <= dout_r + (sdi ? 
-			((dout_r == 32'hffffffff) ? 32'h80000000 : 32'h00000001) : 
-			((dout_r == 32'h00000000) ? 32'h80000000 : 32'hffffffff));
+		dout_r_1 <= dout_r_1 + (sdi ? 
+			((dout_r_1 == 32'hffffffff) ? 32'h80000000 : 32'h00000001) : 
+			((dout_r_1 == 32'h00000000) ? 32'h80000000 : 32'hffffffff));
 end
+wire [31:0] dout_l_2 = dout_l_1 + align;
+assign dout_l = {dout_l_2[31],(scale[5] ? dout_l_2[30:0]>>scale[4:0] : dout_l_2[30:0]<<scale[4:0])};
+wire [31:0] dout_r_2 = dout_r_1 + align;
+assign dout_r = {dout_r_2[31],(scale[5] ? dout_r_2[30:0]>>scale[4:0] : dout_r_2[30:0]<<scale[4:0])};
 
 endmodule
+
+
+`define ir_carrier_offset	32'h80000000
 
 
 module ir_pdm_modulator(
@@ -174,7 +191,7 @@ always@(negedge rstn or posedge clk) begin
 		else if(bck_01) sigma <= sigma + delta;
 	end
 end
-wire [31:0] sigma_bin = (delta == 5'h1f) ? 32'h80000000 : 32'h00000000;
+wire [31:0] sigma_bin = (delta == 5'h1f) ? `ir_carrier_offset : 32'h00000000;
 pdm_modulator u_pdm_modulator(
 	.sdo(sdo), 
 	.din(sigma_bin), 
@@ -217,7 +234,7 @@ pdm_demodulator u_pdm_demodulator(
 reg [31:0] sigma_d, sigma_10;
 always@(negedge rstn or posedge clk) begin
 	if(!rstn) begin
-		sigma_d <= 32'h80000000;
+		sigma_d <= `ir_carrier_offset;
 		sigma_10 <= 32'h00000000;
 	end
 	else if(bck_01) begin
@@ -225,7 +242,7 @@ always@(negedge rstn or posedge clk) begin
 		sigma_10 <= sigma_d - sigma;
 	end
 end
-wire sigma_sign = ((sigma_10 < 32'h80000000) & (sigma_10 > 32'h00000003)) ? 1'b1 : 1'b0;
+wire sigma_sign = ((sigma_10 < `ir_carrier_offset) & (sigma_10 > 32'h00000003)) ? 1'b1 : 1'b0;
 
 reg [4:0] ir_sigma;
 wire [4:0] delta = sigma_sign ? 
