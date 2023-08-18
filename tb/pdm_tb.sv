@@ -16,17 +16,15 @@ pdm_modulator u_pdm_modulator(
 );
 
 reg [5:0] u_audio_pdm_modulator_scale;
-reg [31:0] u_audio_pdm_modulator_align;
 wire u_audio_pdm_modulator_sdo;
 reg [31:0] u_audio_pdm_modulator_din_l, u_audio_pdm_modulator_din_r;
-reg u_audio_pdm_modulator_ock;
+reg u_audio_pdm_modulator_ock, u_audio_pdm_modulator_lrck;
 audio_pdm_modulator u_audio_pdm_modulator(
 	.scale(u_audio_pdm_modulator_scale),
-	.align(u_audio_pdm_modulator_align),
 	.sdo(u_audio_pdm_modulator_sdo), 
 	.din_l(u_audio_pdm_modulator_din_l), 
 	.din_r(u_audio_pdm_modulator_din_r), 
-	.ock(u_audio_pdm_modulator_ock), 
+	.ock(u_audio_pdm_modulator_ock), .lrck(u_audio_pdm_modulator_lrck), 
 	.rstn(rstn), .clk(clk)
 );
 
@@ -55,17 +53,15 @@ pdm_demodulator u_pdm_demodulator(
 );
 
 reg [5:0] u_audio_pdm_demodulator_scale;
-reg [31:0] u_audio_pdm_demodulator_align;
 reg u_audio_pdm_demodulator_sdi;
 wire [31:0] u_audio_pdm_demodulator_dout_l, u_audio_pdm_demodulator_dout_r;
-reg u_audio_pdm_demodulator_ock;
+reg u_audio_pdm_demodulator_ock, u_audio_pdm_demodulator_lrck;
 audio_pdm_demodulator u_audio_pdm_demodulator(
 	.scale(u_audio_pdm_demodulator_scale),
-	.align(u_audio_pdm_demodulator_align),
 	.sdi(u_audio_pdm_demodulator_sdi), 
 	.dout_l(u_audio_pdm_demodulator_dout_l), 
 	.dout_r(u_audio_pdm_demodulator_dout_r), 
-	.ock(u_audio_pdm_demodulator_ock), 
+	.ock(u_audio_pdm_demodulator_ock), .lrck(u_audio_pdm_demodulator_lrck), 
 	.rstn(rstn), .clk(clk)
 );
 
@@ -109,9 +105,11 @@ always@(negedge rstn or negedge u_pdm_modulator_ock) begin
 	else u_pdm_modulator_din_cnt = u_pdm_modulator_din_cnt - 1;
 end
 always@(*) u_audio_pdm_modulator_ock = u_pdm_modulator_ock;
+always #4265.6 u_audio_pdm_modulator_lrck = ~u_audio_pdm_modulator_lrck;
 always@(negedge u_audio_pdm_modulator_ock) u_audio_pdm_modulator_din_l = 2147483647*$sin(5e02*$time*2*3.1415926) + 2147483647;
 always@(negedge u_audio_pdm_modulator_ock) u_audio_pdm_modulator_din_r = 2147483647*$cos(5e02*$time*2*3.1415926) + 2147483647;
 always@(*) u_audio_pdm_demodulator_ock = u_audio_pdm_modulator_ock;
+always@(*) u_audio_pdm_demodulator_lrck = u_audio_pdm_modulator_lrck;
 always@(*) u_audio_pdm_demodulator_sdi = u_audio_pdm_modulator_sdo;
 always@(negedge rstn or posedge clk) begin
 	if(!rstn) begin
@@ -145,11 +143,11 @@ initial begin
 	//u_pdm_modulator_sdo init end
 	//u_audio_pdm_modulator_sdo init
 	u_audio_pdm_modulator_scale = {1'b1,5'd2};
-	u_audio_pdm_modulator_align = 32'd1;
+	u_audio_pdm_modulator_lrck = 0;
 	//u_audio_pdm_modulator_sdo init end
 	//u_audio_pdm_demodulator_sdo init
 	u_audio_pdm_demodulator_scale = {1'b0,5'd1};
-	u_audio_pdm_demodulator_align = ~32'd2+32'd1;
+	u_audio_pdm_demodulator_lrck = 0;
 	//u_audio_pdm_demodulator_sdo init end
 	//u_ir_pdm_modulator_sdo init
 	u_ir_pdm_modulator_ock = 0;
