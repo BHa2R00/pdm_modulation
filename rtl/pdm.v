@@ -62,12 +62,37 @@ end
 endmodule
 
 
+module boxcar (
+	input [31:0] din, 
+	output [31:0] dout, 
+	input rstn, clk 
+);
+
+reg [31:0] d1,d2,d3,d4;
+always@(negedge rstn or posedge clk) begin
+	if(!rstn) begin
+		d1 <= 32'h80000000;
+		d2 <= 32'h80000000;
+		d3 <= 32'h80000000;
+		d4 <= 32'h80000000;
+	end
+	else begin
+		d1 <= din;
+		d2 <= d1;
+		d3 <= d2;
+		d4 <= d3;
+	end
+end
+assign dout = ((d1 >> 2) + (d2 >> 2) + (d3 >> 2) + (d4 >> 2)) + 32'h80000000;
+
+endmodule
+
+
 module audio_pdm_modulator (
 	input [5:0] scale, 
-	input [31:0] align, 
 	output sdo, 
 	input [31:0] din_l, din_r, 
-	input ock, 
+	input ock, lrck, 
 	input rstn, clk
 );
 
@@ -85,9 +110,15 @@ end
 wire ock_01 = ~ock_dd & ock_d;
 wire ock_10 = ock_dd & ~ock_d;
 
-wire [31:0] din_l_1 = din_l + align;
+wire [31:0] din_l_ave, din_r_ave;
+boxcar u_boxcar_l (.din(din_l),.dout(din_l_ave),.rstn(rstn),.clk(~lrck));
+boxcar u_boxcar_r (.din(din_r),.dout(din_r_ave),.rstn(rstn),.clk(lrck));
+wire [31:0] align_l = ~din_l_ave + 32'd1;
+wire [31:0] align_r = ~din_r_ave + 32'd1;
+
+wire [31:0] din_l_1 = din_l + align_l;
 wire [31:0] din_l_2 = {din_l_1[31],(scale[5] ? din_l_1[30:0]>>scale[4:0] : din_l_1[30:0]<<scale[4:0])};
-wire [31:0] din_r_1 = din_r + align;
+wire [31:0] din_r_1 = din_r + align_r;
 wire [31:0] din_r_2 = {din_r_1[31],(scale[5] ? din_r_1[30:0]>>scale[4:0] : din_r_1[30:0]<<scale[4:0])};
 
 reg [31:0] sigma_l, sigma_r;
@@ -109,10 +140,9 @@ endmodule
 
 module audio_pdm_demodulator (
 	input [5:0] scale, 
-	input [31:0] align, 
 	input sdi, 
 	output [31:0] dout_l, dout_r, 
-	input ock, 
+	input ock, lrck, 
 	input rstn, clk
 );
 
@@ -145,9 +175,14 @@ always @(negedge rstn or posedge clk) begin
 			((dout_r_1 == 32'hffffffff) ? 32'h80000000 : 32'h00000001) : 
 			((dout_r_1 == 32'h00000000) ? 32'h80000000 : 32'hffffffff));
 end
-wire [31:0] dout_l_2 = dout_l_1 + align;
+wire [31:0] dout_l_ave, dout_r_ave;
+boxcar u_boxcar_l (.din(dout_l_1),.dout(dout_l_ave),.rstn(rstn),.clk(lrck));
+boxcar u_boxcar_r (.din(dout_r_1),.dout(dout_r_ave),.rstn(rstn),.clk(~lrck));
+wire [31:0] align_l = ~dout_l_ave + 32'd1;
+wire [31:0] align_r = ~dout_r_ave + 32'd1;
+wire [31:0] dout_l_2 = dout_l_1 + align_l;
 assign dout_l = {dout_l_2[31],(scale[5] ? dout_l_2[30:0]>>scale[4:0] : dout_l_2[30:0]<<scale[4:0])};
-wire [31:0] dout_r_2 = dout_r_1 + align;
+wire [31:0] dout_r_2 = dout_r_1 + align_r;
 assign dout_r = {dout_r_2[31],(scale[5] ? dout_r_2[30:0]>>scale[4:0] : dout_r_2[30:0]<<scale[4:0])};
 
 endmodule
