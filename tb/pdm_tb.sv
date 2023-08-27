@@ -10,16 +10,19 @@ reg [31:0] u_pdm_modulator_din;
 reg u_pdm_modulator_ock;
 pdm_modulator u_pdm_modulator(
 	.sdo(u_pdm_modulator_sdo), 
+	.signed_data(1'b0), 
 	.din(u_pdm_modulator_din), 
 	.ock(u_pdm_modulator_ock), 
 	.rstn(rstn), .clk(clk)
 );
 
+reg u_audio_pdm_modulator_auto_dc_offset;
 reg [5:0] u_audio_pdm_modulator_scale;
 wire u_audio_pdm_modulator_sdo;
 reg [31:0] u_audio_pdm_modulator_din_l, u_audio_pdm_modulator_din_r;
 reg u_audio_pdm_modulator_ock, u_audio_pdm_modulator_lrck;
 audio_pdm_modulator u_audio_pdm_modulator(
+	.auto_dc_offset(u_audio_pdm_modulator_auto_dc_offset), 
 	.scale(u_audio_pdm_modulator_scale),
 	.sdo(u_audio_pdm_modulator_sdo), 
 	.din_l(u_audio_pdm_modulator_din_l), 
@@ -47,16 +50,19 @@ wire [31:0] u_pdm_demodulator_dout;
 reg u_pdm_demodulator_ock;
 pdm_demodulator u_pdm_demodulator(
 	.sdi(u_pdm_demodulator_sdi), 
+	.signed_data(1'b0), .enable_diff(1'b0), 
 	.dout(u_pdm_demodulator_dout), 
 	.ock(u_pdm_demodulator_ock), 
 	.rstn(rstn), .clk(clk)
 );
 
+reg u_audio_pdm_demodulator_auto_dc_offset;
 reg [5:0] u_audio_pdm_demodulator_scale;
 reg u_audio_pdm_demodulator_sdi;
 wire [31:0] u_audio_pdm_demodulator_dout_l, u_audio_pdm_demodulator_dout_r;
 reg u_audio_pdm_demodulator_ock, u_audio_pdm_demodulator_lrck;
 audio_pdm_demodulator u_audio_pdm_demodulator(
+	.auto_dc_offset(u_audio_pdm_demodulator_auto_dc_offset), 
 	.scale(u_audio_pdm_demodulator_scale),
 	.sdi(u_audio_pdm_demodulator_sdi), 
 	.dout_l(u_audio_pdm_demodulator_dout_l), 
@@ -142,10 +148,12 @@ initial begin
 	u_pdm_modulator_ock = 0;
 	//u_pdm_modulator_sdo init end
 	//u_audio_pdm_modulator_sdo init
+	u_audio_pdm_modulator_auto_dc_offset = 1'b0;
 	u_audio_pdm_modulator_scale = {1'b1,5'd2};
 	u_audio_pdm_modulator_lrck = 0;
 	//u_audio_pdm_modulator_sdo init end
 	//u_audio_pdm_demodulator_sdo init
+	u_audio_pdm_demodulator_auto_dc_offset = 1'b0;
 	u_audio_pdm_demodulator_scale = {1'b0,5'd1};
 	u_audio_pdm_demodulator_lrck = 0;
 	//u_audio_pdm_demodulator_sdo init end
